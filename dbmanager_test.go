@@ -29,9 +29,10 @@ func TestMain(m *testing.M) {
 	encoder.SetIndent("", "  ")
 	//start mysql test
 	currentDB = DefaultName
+	//SetTemplateFS(os.DirFS("./testdata"), "examples/*.sql", "initialize/*.sql", "my_mapper/*.sql")
 	MustOpen(currentDB, "mysql", "xxtest:xxtest@tcp(localhost)/sqlmx?charset=utf8&parseTime=true&multiStatements=true").
 		ParseTemplateFS(os.DirFS("./testdata"), "examples/*.sql", "initialize/*.sql", "my_mapper/*.sql")
-	SetTemplateFS(os.DirFS("./testdata"), "examples/*.sql", "initialize/*.sql", "my_mapper/*.sql")
+
 	initData()
 	m.Run()
 	//Manager.Shutdown()

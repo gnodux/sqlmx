@@ -13,8 +13,22 @@
 go get github.com/gnodux/sqlmx
 ```
 
-## factory: management your database connections
+## DBManager: management your database connections
+always initialize DBManager instance named 'Manager'
 
+```go
+import "github.com/gnodux/sqlmx"
+```
+    
+Open a database connection named 'db1' with mysql driver.
+initialize sql template and sql expression with 'db1' connection.
+```go   
+db1,err:=sqlmx.Open("db1","mysql", "root:root@tcp(...)")
+if err!=nil{
+    log.Fatal(err)
+}
+db1.ParseTemplateFS(os.DirFS("./testdata"), "examples/*.sql", "initialize/*.sql", "my_mapper/*.sql")
+```
 ## sql template
 
 ## sql expression
