@@ -135,27 +135,33 @@ func whereWith(driver *dialect.Dialect, arg any, op string, named bool) string {
 		op = " " + op + " "
 	}
 
+	// 预分配一个合理的初始容量
 	buf := strings.Builder{}
+	buf.Grow(256)
+
 	switch reflect.TypeOf(argv.Interface()).Kind() {
 	case reflect.Map:
 		comma := driver.KeywordWithSpace("WHERE")
-		for _, k := range argv.MapKeys() {
+		keys := argv.MapKeys()
+		for i := 0; i < len(keys); i++ {
+			k := keys[i]
 			buf.WriteString(comma)
 			buf.WriteString(driver.SQLNameFunc(driver.NameFunc(k.String())))
 			value := argv.MapIndex(k)
-			switch reflect.TypeOf(value.Interface()).Kind() {
-			case reflect.String:
+			valueKind := reflect.TypeOf(value.Interface()).Kind()
+			if valueKind == reflect.String {
 				const stringMatchers = "%.?"
 				if strings.ContainsAny(value.Interface().(string), stringMatchers) {
 					buf.WriteString(driver.KeywordWithSpace("LIKE"))
 				} else {
-					buf.WriteString("=")
+					buf.WriteByte('=')
 				}
-			default:
-				buf.WriteString("=")
+			} else {
+				buf.WriteByte('=')
 			}
 			if named {
-				buf.WriteString(fmt.Sprintf(":%s", k.String()))
+				buf.WriteByte(':')
+				buf.WriteString(k.String())
 			} else {
 				buf.WriteString(sqlValue(driver, value.Interface()))
 			}
@@ -163,34 +169,41 @@ func whereWith(driver *dialect.Dialect, arg any, op string, named bool) string {
 		}
 	case reflect.Struct:
 		comma := driver.KeywordWithSpace("WHERE")
+		typ := argv.Type()
 		for i := 0; i < argv.NumField(); i++ {
-			if argv.Field(i).IsZero() {
+			field := argv.Field(i)
+			if field.IsZero() {
 				continue
 			}
 			buf.WriteString(comma)
-			buf.WriteString(driver.SQLNameFunc(driver.NameFunc(argv.Type().Field(i).Name)))
-			buf.WriteString("=")
-			buf.WriteString(sqlValue(driver, argv.Field(i).Interface()))
+			buf.WriteString(driver.SQLNameFunc(driver.NameFunc(typ.Field(i).Name)))
+			buf.WriteByte('=')
+			buf.WriteString(sqlValue(driver, field.Interface()))
 			comma = op
 		}
-
 	}
-	buf.WriteString(" ")
+	buf.WriteByte(' ')
 	return buf.String()
-
 }
 
 // sqlValues list of sqlValues
 func sqlValues(driver *dialect.Dialect, v any) string {
 	value := reflect.ValueOf(v)
-	comma := ""
 	sb := &strings.Builder{}
+	// 预分配一个合理的初始容量
+	sb.Grow(64)
+
 	switch value.Kind() {
 	case reflect.Slice, reflect.Array:
-		for idx := 0; idx < value.Len(); idx++ {
-			sb.WriteString(comma)
-			sb.WriteString(sqlValue(driver, value.Index(idx).Interface()))
-			comma = ","
+		len := value.Len()
+		if len > 0 {
+			// 第一个元素不需要逗号
+			sb.WriteString(sqlValue(driver, value.Index(0).Interface()))
+			// 后续元素添加逗号
+			for idx := 1; idx < len; idx++ {
+				sb.WriteByte(',')
+				sb.WriteString(sqlValue(driver, value.Index(idx).Interface()))
+			}
 		}
 	default:
 		sb.WriteString(sqlValue(driver, value.Interface()))

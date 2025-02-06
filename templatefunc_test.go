@@ -7,14 +7,15 @@ package sqlmx
 
 import (
 	"fmt"
-	"github.com/gnodux/sqlmx/dialect"
-	_ "github.com/lib/pq"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
 	"text/template"
+
+	"github.com/gnodux/sqlmx/dialect"
+	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTemplateFunc(t *testing.T) {
@@ -31,6 +32,15 @@ func TestTemplateFunc(t *testing.T) {
 	tpl := template.New("tests").Funcs(MakeFuncMap(dialect.MySQL))
 	_, err := tpl.ParseFS(os.DirFS("testdata/examples"), "*.sql")
 	assert.NoError(t, err)
+
+	// 初始化测试用例
+	tests = []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: 在此添加测试用例
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
